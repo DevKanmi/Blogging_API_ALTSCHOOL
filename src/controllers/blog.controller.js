@@ -18,7 +18,7 @@ export class BlogController {
 
         try {
             logger.info(`START: Checking if User exists`)
-            console.log("id is: ", userId)
+            
             const user = await User.findById(userId)
             if(!user){
                 return next(new ErrorResponse(`Kindly Login to access this route!`, 403))
@@ -56,7 +56,7 @@ export class BlogController {
             })
             
         } catch (error) {
-            logger.error(`END: Post could not be created`)
+            logger.error(`END: Post could not be created: ${error.message}`)
             return next(new ErrorResponse(error.message, 500))
         }
     }
@@ -123,7 +123,7 @@ export class BlogController {
             }
 
             blog.state = 'published'
-            blog.updatedAt = new Date.now()
+            blog.updatedAt = Date.now()
             await blog.save()
 
             logger.info(`END : Blog has been published Successfully!`)
@@ -143,13 +143,15 @@ export class BlogController {
 
     getPosts = async (req, res, next) => {
         try {
-            const { page = 1, limit = 20, search = "", sortBy = "createdAt", order = "desc" } = req.query;
+
+            logger.info(`START: Attempting to get all Posts`)
+            const { page = 1, limit = 20, search = "", sortBy = "createdAt", order = "desc" } = req.query
     
-            const pageNum = parseInt(page, 10);
-            const limitNum = parseInt(limit, 10);
-            const sortOrder = order === "asc" ? 1 : -1;
+            const pageNum = parseInt(page, 10)
+            const limitNum = parseInt(limit, 10)
+            const sortOrder = order === "asc" ? 1 : -1
     
-            const query = { state: "published" }; // Base query for published posts
+            const query = { state: "published" };
     
             if (search) {
                 query.$or = [
@@ -161,15 +163,17 @@ export class BlogController {
     
             const sortOptions = { [sortBy]: sortOrder };
     
-            const totalBlogs = await Blog.countDocuments(query);
-            const totalPages = Math.ceil(totalBlogs / limitNum);
+            const totalBlogs = await Blog.countDocuments(query)
+            const totalPages = Math.ceil(totalBlogs / limitNum)
     
             const blogs = await Blog.find(query)
                 .sort(sortOptions)
                 .skip((pageNum - 1) * limitNum)
                 .limit(limitNum)
-                .populate('createdBy', {firstName: 1, lastName: 1});
+                .populate('createdBy', {firstName: 1, lastName: 1})
     
+            logger.info(`END: Successfully retrieved all posts`)
+
             res.status(200).json({
                 success: true,
                 message: `Blogs retrieved successfully`,
@@ -182,7 +186,7 @@ export class BlogController {
                 }
             });
         } catch (error) {
-            logger.error(`END: Fail to get all blog Posts.`, error); // Include the error object in the log
+            logger.error(`END: Fail to get all blog Posts: ${error.message}.`);
             return next(new ErrorResponse(error.message, 500));
         }
     };
@@ -258,7 +262,7 @@ export class BlogController {
             })
             
         } catch (error) {
-            logger.error(`END: Failed to delete a blog post`)
+            logger.error(`END: Failed to delete a blog post : ${error.message}`)
             return next(new ErrorResponse(error.message, 500))
         }
     }
@@ -268,7 +272,8 @@ export class BlogController {
         const { state, page = 1, limit = 10 } = req.query
 
         try {
-        // Build the query object dynamically
+            
+            logger.info(`START: Attempting to retrieve psot created by loggedIn Author`)
             const query = { createdBy: userId }
             if (state) query.state = state
 
@@ -282,7 +287,7 @@ export class BlogController {
 
             const total = await Blog.countDocuments(query)
 
-        
+            logger.info(`END: All Post created you has been retrieved`)
             return res.status(200).json({
                 success: true,
                 page: parseInt(page),
@@ -291,6 +296,7 @@ export class BlogController {
                 blogs,
             })
         } catch (error) {
+            logger.error(`END: Failed to retrieve post:  ${error.message}`)
             return next(new ErrorResponse(error.message, 500))
         }
     }
