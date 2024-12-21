@@ -217,7 +217,7 @@ export class BlogController {
                 return next(new ErrorResponse(`Failed to Update the Post`, 400))
             }
 
-            post.updatedAt = new Date.now()
+            post.updatedAt = Date.now()
             await post.save()
 
             logger.info(`END: Post has been edited Succesfully`)
